@@ -1,0 +1,1649 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Roast – L'assistant IA qui roaste tes campagnes ads</title>
+
+<!-- Google Analytics placeholder -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-XXXXXXXXXX'); // ← Remplace par ton ID GA4
+</script>
+
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,300;0,600;0,700;0,800;0,900;1,300;1,700&family=Barlow:wght@300;400;500&display=swap" rel="stylesheet">
+
+<style>
+  /* ─────────────────────────────────────────
+     TOKENS
+  ───────────────────────────────────────── */
+  :root {
+    --bg:       #0c0b09;
+    --bg2:      #111008;
+    --surface:  #161410;
+    --border:   rgba(255,255,255,0.07);
+    --border2:  rgba(255,255,255,0.12);
+    --text:     #e8e2d9;
+    --muted:    #7a7266;
+    --faint:    #3a3530;
+    --accent:   #e85c2a;
+    --accent-l: rgba(232,92,42,0.12);
+    --accent-b: rgba(232,92,42,0.25);
+    --white:    #f2ede6;
+    --r: 16px;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: auto; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Barlow', sans-serif;
+    font-size: 17px;
+    line-height: 1.65;
+    overflow-x: hidden;
+  }
+
+  /* grain overlay */
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 9999;
+    opacity: .025;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");
+  }
+
+  /* ─────────────────────────────────────────
+     UTILITIES
+  ───────────────────────────────────────── */
+  .container { max-width: 1080px; margin: 0 auto; padding: 0 40px; }
+
+  .label {
+    display: inline-block;
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: .18em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 18px;
+  }
+
+  h2 {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 800;
+    font-size: clamp(36px, 4.5vw, 56px);
+    line-height: 1.0;
+    letter-spacing: -.5px;
+    color: var(--white);
+    margin-bottom: 20px;
+  }
+
+  .rule { width: 40px; height: 2px; background: var(--accent); margin-bottom: 24px; }
+
+  /* reveal on scroll */
+  .reveal {
+    opacity: 0;
+    transform: translateY(28px);
+    transition: opacity .65s ease, transform .65s ease;
+  }
+  .reveal.in { opacity: 1; transform: none; }
+
+  /* ─────────────────────────────────────────
+     NAV
+  ───────────────────────────────────────── */
+  nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 200;
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+    padding: 0 40px;
+    height: 62px;
+    border-bottom: 1px solid var(--border);
+    backdrop-filter: blur(18px) saturate(1.5);
+    background: rgba(12,11,9,.75);
+  }
+
+  .nav-right {
+    display: flex;
+    justify-content: flex-end;
+  }
+
+  .logo {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 900;
+    font-size: 24px;
+    letter-spacing: .04em;
+    color: var(--white);
+    text-decoration: none;
+  }
+  .logo .dot { color: var(--accent); }
+  .logo {
+    cursor: pointer;
+    display: inline-block;
+    width: fit-content;
+    user-select: none;
+  }
+
+  .nav-links {
+    display: flex; gap: 32px; list-style: none;
+  }
+  .nav-links a {
+    color: var(--muted); text-decoration: none;
+    font-size: 14px; font-weight: 500; letter-spacing: .02em;
+    transition: color .2s;
+  }
+  .nav-links a:hover { color: var(--text); }
+
+  .btn-nav {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 700; font-size: 14px; letter-spacing: .06em;
+    text-transform: uppercase;
+    background: var(--accent); color: #fff;
+    border: none; border-radius: 8px;
+    padding: 10px 22px; cursor: pointer;
+    text-decoration: none;
+    transition: opacity .2s, transform .15s;
+  }
+  .btn-nav:hover { opacity: .88; transform: translateY(-1px); }
+
+  /* ─────────────────────────────────────────
+     BACKGROUND CHART (site-wide, behind everything)
+  ───────────────────────────────────────── */
+  #bg-chart {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    pointer-events: none;
+    z-index: 0;
+    overflow: visible;
+  }
+
+  /* ─────────────────────────────────────────
+     HERO
+  ───────────────────────────────────────── */
+  .hero {
+    min-height: 100vh;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    padding: 140px 40px 100px;
+    text-align: center;
+    position: relative;
+  }
+
+  /* big background lettering */
+  .hero-bg-text {
+    position: absolute;
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 900;
+    font-size: clamp(160px, 22vw, 320px);
+    letter-spacing: -.02em;
+    color: transparent;
+    -webkit-text-stroke: 1px rgba(255,255,255,.04);
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+    white-space: nowrap;
+    user-select: none;
+    line-height: 1;
+  }
+
+  /* radial glow behind hero */
+  .hero::before {
+    content: '';
+    position: absolute;
+    width: 700px; height: 700px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(232,92,42,.1) 0%, transparent 65%);
+    top: 50%; left: 50%;
+    transform: translate(-50%, -55%);
+    pointer-events: none;
+  }
+
+  .hero-eyebrow {
+    display: flex; align-items: center; gap: 10px;
+    border: 1px solid var(--border2);
+    background: rgba(232,92,42,.06);
+    border-radius: 100px;
+    padding: 6px 18px 6px 12px;
+    margin-bottom: 36px;
+    font-size: 13px; color: var(--muted);
+    letter-spacing: .03em;
+    position: relative; z-index: 1;
+    animation: fadeUp .5s ease both;
+  }
+
+  .hero-eyebrow-dot {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: var(--accent);
+    animation: blink 2.4s infinite;
+  }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.25} }
+
+  h1 {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 900;
+    font-size: clamp(52px, 8vw, 100px);
+    line-height: .95;
+    letter-spacing: -.02em;
+    color: var(--white);
+    max-width: 900px;
+    margin-bottom: 28px;
+    position: relative; z-index: 1;
+    animation: fadeUp .55s ease .08s both;
+  }
+
+  h1 .accent { color: var(--accent); }
+
+  .hero-sub {
+    font-size: clamp(15px, 1.8vw, 18px);
+    color: var(--muted);
+    max-width: 580px;
+    font-weight: 300;
+    line-height: 1.65;
+    margin-bottom: 52px;
+    position: relative; z-index: 1;
+    animation: fadeUp .55s ease .16s both;
+  }
+
+  /* Waitlist form inline */
+  .hero-form {
+    display: flex; flex-direction: column;
+    align-items: center; gap: 14px;
+    width: 100%; max-width: 500px;
+    position: relative; z-index: 1;
+    animation: fadeUp .55s ease .24s both;
+  }
+
+  .form-row {
+    display: flex; gap: 10px; width: 100%;
+  }
+
+  .form-input, .form-select {
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: 10px;
+    color: var(--text);
+    font-family: 'Barlow', sans-serif;
+    font-size: 15px;
+    padding: 14px 18px;
+    outline: none;
+    transition: border-color .2s;
+    width: 100%;
+    -webkit-appearance: none;
+    appearance: none;
+  }
+  .form-input::placeholder { color: var(--muted); }
+  .form-input:focus, .form-select:focus { border-color: var(--accent); }
+
+  .form-select { cursor: pointer; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' fill='none'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%237a7266' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 16px center; padding-right: 40px; }
+  .form-select option { background: #1a1714; color: var(--text); }
+
+  .btn-primary {
+    display: inline-flex; align-items: center; justify-content: center; gap: 10px;
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 700; font-size: 17px; letter-spacing: .08em;
+    text-transform: uppercase;
+    background: var(--accent); color: #fff;
+    border: none; border-radius: 10px;
+    padding: 16px 36px; cursor: pointer; width: 100%;
+    transition: opacity .2s, transform .15s, box-shadow .2s;
+    box-shadow: 0 0 40px rgba(232,92,42,.3);
+  }
+  .btn-primary:hover { opacity: .9; transform: translateY(-2px); box-shadow: 0 8px 48px rgba(232,92,42,.4); }
+  .btn-primary svg { flex-shrink: 0; }
+
+  .hero-caption {
+    font-size: 13px; color: var(--faint);
+    letter-spacing: .02em;
+    position: relative; z-index: 1;
+  }
+
+  /* success state */
+  .form-success {
+    display: none;
+    text-align: center;
+    padding: 28px 32px;
+    background: var(--surface);
+    border: 1px solid rgba(232,92,42,.3);
+    border-radius: 16px;
+    width: 100%;
+    max-width: 500px;
+    animation: fadeUp .4s ease both;
+    position: relative; z-index: 1;
+  }
+  .form-success-icon { margin-bottom: 12px; }
+  .form-success h3 {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 800; font-size: 24px; color: var(--white);
+    margin-bottom: 8px;
+  }
+  .form-success p { font-size: 14px; color: var(--muted); }
+
+  /* counter strip */
+  .hero-counter {
+    margin-top: 64px;
+    display: flex; align-items: center; gap: 28px;
+    position: relative; z-index: 1;
+    animation: fadeUp .55s ease .32s both;
+    border-top: 1px solid var(--border);
+    padding-top: 32px;
+  }
+
+  .counter-item { text-align: center; }
+  .counter-value {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 800; font-size: 36px; color: var(--white);
+    line-height: 1;
+  }
+  .counter-label { font-size: 12px; color: var(--muted); letter-spacing: .04em; margin-top: 4px; }
+  .counter-sep { width: 1px; height: 40px; background: var(--border); }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(22px); }
+    to   { opacity: 1; transform: none; }
+  }
+
+  /* ─────────────────────────────────────────
+     PROBLEMS
+  ───────────────────────────────────────── */
+  .problems {
+    padding: 96px 0;
+    border-top: 1px solid var(--border);
+  }
+
+  .problems-inner {
+    display: grid;
+    grid-template-columns: 1fr 1.4fr;
+    gap: 80px;
+    align-items: center;
+  }
+
+  .problems-list { list-style: none; margin-top: 8px; }
+  .problems-list li {
+    display: flex; align-items: flex-start; gap: 16px;
+    padding: 20px 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 16px; line-height: 1.5;
+  }
+  .problems-list li:first-child { border-top: 1px solid var(--border); }
+
+  .prob-icon {
+    width: 32px; height: 32px; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--accent);
+    margin-top: 2px;
+  }
+
+  .prob-text strong {
+    display: block;
+    font-weight: 500; color: var(--white);
+    margin-bottom: 4px; font-size: 15px;
+  }
+  .prob-text span { color: var(--muted); font-size: 14px; }
+
+  /* mini dashboard visual */
+  .prob-visual {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    overflow: hidden;
+  }
+
+  .pv-bar {
+    background: #1a1714;
+    border-bottom: 1px solid var(--border);
+    padding: 12px 18px;
+    display: flex; align-items: center; gap: 7px;
+  }
+  .pv-dot { width: 9px; height: 9px; border-radius: 50%; }
+  .pv-title { font-size: 12px; color: var(--muted); margin-left: 6px; letter-spacing: .03em; }
+
+  .pv-body { padding: 20px; }
+
+  .pv-week {
+    font-size: 10px; text-transform: uppercase; letter-spacing: .1em;
+    color: var(--muted); margin-bottom: 14px;
+  }
+
+  .pv-campaign {
+    background: #1a1714;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 16px;
+    margin-bottom: 8px;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+
+  .pvc-name { font-size: 13px; font-weight: 500; color: var(--text); }
+  .pvc-meta { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+  .pvc-right { text-align: right; }
+  .pvc-roas { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 18px; }
+  .pvc-spend { font-size: 11px; color: var(--muted); }
+
+  .roas-good { color: #6fcf97; }
+  .roas-warn { color: #f2c94c; }
+  .roas-bad  { color: var(--accent); }
+
+  .pv-alert {
+    margin-top: 14px;
+    background: rgba(232,92,42,.08);
+    border: 1px solid var(--accent-b);
+    border-radius: 8px;
+    padding: 12px 14px;
+    display: flex; align-items: flex-start; gap: 10px;
+  }
+  .pv-alert-icon { flex-shrink: 0; color: var(--accent); margin-top: 1px; }
+  .pv-alert-text { font-size: 12px; color: var(--text); line-height: 1.5; }
+  .pv-alert-text strong { color: var(--accent); font-weight: 600; }
+
+  /* ─────────────────────────────────────────
+     FEATURES
+  ───────────────────────────────────────── */
+  .features {
+    padding: 96px 0;
+    border-top: 1px solid var(--border);
+  }
+
+  .features-header { text-align: center; margin-bottom: 64px; }
+
+  .features-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 2px;
+  }
+
+  .feat {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 36px 32px 40px;
+    transition: background .2s;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .feat:first-child { border-radius: 16px 0 0 16px; }
+  .feat:last-child  { border-radius: 0 16px 16px 0; }
+  .feat:hover { background: #1a1714; }
+
+  .feat-number {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 900; font-size: 72px; line-height: 1;
+    color: rgba(255,255,255,.04);
+    position: absolute; top: 20px; right: 20px;
+    letter-spacing: -.04em;
+    pointer-events: none;
+  }
+
+  .feat-icon {
+    width: 44px; height: 44px;
+    display: flex; align-items: center; justify-content: center;
+    background: var(--accent-l);
+    border: 1px solid var(--accent-b);
+    border-radius: 12px;
+    color: var(--accent);
+    margin-bottom: 24px;
+  }
+
+  .feat-title {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 800; font-size: 22px; color: var(--white);
+    margin-bottom: 14px; letter-spacing: -.01em;
+    line-height: 1.1;
+  }
+
+  .feat-list { list-style: none; }
+  .feat-list li {
+    font-size: 14px; color: var(--muted);
+    padding: 7px 0;
+    border-bottom: 1px solid var(--border);
+    display: flex; gap: 10px; align-items: flex-start;
+    line-height: 1.45;
+  }
+  .feat-list li:last-child { border-bottom: none; padding-bottom: 0; }
+  .feat-list li::before {
+    content: '';
+    width: 5px; height: 5px; border-radius: 50%;
+    background: var(--accent);
+    flex-shrink: 0; margin-top: 8px;
+  }
+
+  /* ─────────────────────────────────────────
+     FOR WHO
+  ───────────────────────────────────────── */
+  .for-who {
+    padding: 96px 0;
+    border-top: 1px solid var(--border);
+  }
+
+  .for-who-inner {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 72px;
+    align-items: start;
+  }
+
+  .for-who-cards { display: flex; flex-direction: column; gap: 2px; margin-top: 8px; }
+
+  .fw-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 24px 28px;
+    display: flex; gap: 18px; align-items: flex-start;
+    transition: background .2s, border-color .2s;
+  }
+  .fw-card:first-child { border-radius: 12px 12px 0 0; }
+  .fw-card:last-child  { border-radius: 0 0 12px 12px; }
+  .fw-card:hover { background: #1a1714; border-color: var(--border2); }
+
+  .fw-icon {
+    width: 36px; height: 36px; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--accent); margin-top: 2px;
+  }
+
+  .fw-title { font-weight: 500; color: var(--white); font-size: 15px; margin-bottom: 4px; }
+  .fw-desc  { font-size: 13px; color: var(--muted); line-height: 1.55; }
+
+  /* quote block */
+  .for-who-quote {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    border-radius: 0 14px 14px 0;
+    padding: 32px;
+    margin-bottom: 32px;
+  }
+
+  .fwq-text {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 22px; font-weight: 300; font-style: italic;
+    color: var(--white); line-height: 1.35;
+    margin-bottom: 16px;
+  }
+  .fwq-author { font-size: 13px; color: var(--muted); }
+  .fwq-author strong { color: var(--text); font-weight: 500; }
+
+  .for-who-stat {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 2px;
+  }
+
+  .stat-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 22px;
+    text-align: center;
+  }
+  .stat-box:first-child { border-radius: 12px 0 0 12px; }
+  .stat-box:last-child  { border-radius: 0 12px 12px 0; }
+
+  .stat-value {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 800; font-size: 38px; color: var(--accent);
+    line-height: 1;
+  }
+  .stat-label { font-size: 12px; color: var(--muted); margin-top: 6px; line-height: 1.4; }
+
+  /* ─────────────────────────────────────────
+     BETA PROCESS
+  ───────────────────────────────────────── */
+  .beta {
+    padding: 96px 0;
+    border-top: 1px solid var(--border);
+  }
+
+  .beta-header { text-align: center; margin-bottom: 64px; }
+
+  .beta-steps {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 2px;
+    margin-bottom: 56px;
+  }
+
+  .beta-step {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 32px;
+    position: relative;
+    transition: background .2s;
+  }
+  .beta-step:first-child { border-radius: 12px 0 0 12px; }
+  .beta-step:last-child  { border-radius: 0 12px 12px 0; }
+  .beta-step:hover { background: #1a1714; }
+
+  /* connector line between steps */
+  .beta-step:not(:last-child)::after {
+    content: '';
+    position: absolute;
+    right: -1px; top: 50%;
+    transform: translateY(-50%);
+    width: 1px; height: 40%;
+    background: var(--accent-b);
+    z-index: 1;
+  }
+
+  .bs-num {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 900; font-size: 48px; color: var(--accent-b);
+    line-height: 1; margin-bottom: 18px;
+    letter-spacing: -.03em;
+  }
+
+  .bs-title {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 800; font-size: 20px; color: var(--white);
+    margin-bottom: 12px; letter-spacing: -.01em;
+  }
+
+  .bs-desc { font-size: 14px; color: var(--muted); line-height: 1.6; }
+
+  .bs-tag {
+    display: inline-block; margin-top: 14px;
+    background: var(--accent-l);
+    border: 1px solid var(--accent-b);
+    color: var(--accent);
+    font-size: 11px; font-weight: 600; letter-spacing: .06em;
+    text-transform: uppercase;
+    padding: 4px 12px; border-radius: 100px;
+  }
+
+  .beta-cta { text-align: center; }
+
+  /* ─────────────────────────────────────────
+     WAITLIST SECTION (bottom form)
+  ───────────────────────────────────────── */
+  .waitlist {
+    padding: 96px 0;
+    border-top: 1px solid var(--border);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .waitlist::before {
+    content: '';
+    position: absolute;
+    width: 600px; height: 400px;
+    border-radius: 50%;
+    background: radial-gradient(ellipse, rgba(232,92,42,.07) 0%, transparent 70%);
+    bottom: -200px; left: 50%; transform: translateX(-50%);
+    pointer-events: none;
+  }
+
+  .waitlist-inner {
+    max-width: 600px;
+    margin: 0 auto;
+    text-align: center;
+  }
+
+  .waitlist-inner h2 { margin-bottom: 12px; }
+  .waitlist-inner p {
+    font-size: 17px; color: var(--muted); font-weight: 300;
+    margin-bottom: 40px; line-height: 1.6;
+  }
+
+  .waitlist-form { display: flex; flex-direction: column; gap: 12px; }
+  .waitlist-form .form-row { flex-direction: row; }
+
+  .form-group { display: flex; flex-direction: column; gap: 12px; width: 100%; }
+
+  /* ─────────────────────────────────────────
+     FAQ
+  ───────────────────────────────────────── */
+  .faq {
+    padding: 96px 0;
+    border-top: 1px solid var(--border);
+  }
+
+  .faq-header { text-align: center; margin-bottom: 56px; }
+
+  .faq-list {
+    max-width: 720px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .faq-item {
+    border-bottom: 1px solid var(--border);
+    overflow: hidden;
+  }
+  .faq-item:first-child { border-top: 1px solid var(--border); }
+
+  .faq-q {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 22px 0;
+    font-weight: 500; font-size: 15px; color: var(--white);
+    cursor: pointer;
+    gap: 16px;
+    user-select: none;
+    transition: color .2s;
+  }
+  .faq-q:hover { color: var(--accent); }
+
+  .faq-q svg {
+    flex-shrink: 0;
+    transition: transform .3s;
+    color: var(--muted);
+  }
+  .faq-item.open .faq-q svg { transform: rotate(45deg); color: var(--accent); }
+
+  .faq-a {
+    max-height: 0;
+    overflow: hidden;
+    font-size: 14px; color: var(--muted); line-height: 1.7;
+    transition: max-height .35s ease, padding .3s ease;
+    padding-bottom: 0;
+  }
+  .faq-item.open .faq-a {
+    max-height: 200px;
+    padding-bottom: 22px;
+  }
+
+  /* ─────────────────────────────────────────
+     FOOTER
+  ───────────────────────────────────────── */
+  footer {
+    border-top: 1px solid var(--border);
+    padding: 32px 40px;
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+    position: relative; z-index: 1;
+  }
+
+  footer p { font-size: 13px; color: var(--muted); text-align: center; }
+  .footer-links { display: flex; gap: 24px; justify-content: flex-end; }
+  .footer-links a { font-size: 13px; color: var(--muted); text-decoration: none; transition: color .2s; }
+  .footer-links a:hover { color: var(--text); }
+
+  /* ─────────────────────────────────────────
+     FORM VALIDATION ERRORS
+  ───────────────────────────────────────── */
+  .field-error {
+    display: none;
+    font-size: 12px;
+    color: #f56242;
+    margin-top: -6px;
+    padding-left: 4px;
+    letter-spacing: .01em;
+    align-items: center;
+    gap: 5px;
+  }
+  .field-error.visible { display: flex; }
+  .field-error svg { flex-shrink: 0; }
+
+  .form-input.err,
+  .form-select.err {
+    border-color: #f56242 !important;
+    background: rgba(245,98,66,.04);
+  }
+
+  /* MID-PAGE CTA
+  ───────────────────────────────────────── */
+  .mid-cta {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+    margin-top: 56px;
+    padding-top: 56px;
+    border-top: 1px solid var(--border);
+    text-align: center;
+  }
+
+  .mid-cta .btn-primary {
+    width: auto;
+    padding: 16px 44px;
+    text-decoration: none;
+  }
+
+  .mid-cta-sub {
+    font-size: 13px;
+    color: var(--muted);
+    letter-spacing: .02em;
+  }
+
+  /* ─────────────────────────────────────────
+     CENTERING FIXES
+  ───────────────────────────────────────── */
+
+  /* Problems: h2 in left column should be left-aligned on desktop, centered on mobile */
+  .problems-inner > div:first-child {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: center;
+  }
+
+  /* Features header: everything centered */
+  .features-header {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  /* Beta header: everything centered */
+  .beta-header {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  /* Waitlist inner: all centered */
+  .waitlist-inner {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .waitlist-inner h2,
+  .waitlist-inner p { text-align: center; }
+
+  .waitlist-form { width: 100%; }
+
+  /* FAQ header centered */
+  .faq-header {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  /* For-who right column top-aligned */
+  .for-who-inner > div:last-child {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+  }
+
+  /* Beta step text left-aligned inside card */
+  .beta-step { display: flex; flex-direction: column; align-items: flex-start; }
+
+  /* Ensure all sections sit above the bg chart */
+  nav, section, footer, #legal { position: relative; z-index: 1; }
+
+  /* ─────────────────────────────────────────
+     RESPONSIVE
+  ───────────────────────────────────────── */
+  @media (max-width: 860px) {
+    nav {
+      grid-template-columns: 1fr auto;
+      padding: 0 20px;
+    }
+    .nav-links { display: none; }
+    .nav-right { justify-content: flex-end; }
+    .container { padding: 0 20px; }
+    h1 { font-size: clamp(44px, 12vw, 68px); }
+    h2 { font-size: 32px; letter-spacing: -.3px; }
+
+    /* Hero */
+    .hero { padding: 110px 20px 72px; text-align: center; }
+    .hero-counter { flex-wrap: wrap; justify-content: center; gap: 20px; }
+    .counter-sep { display: none; }
+
+    /* Problems */
+    .problems-inner { grid-template-columns: 1fr; gap: 36px; }
+    .problems-inner > div:first-child { align-items: center; text-align: center; }
+    .problems-inner > div:first-child .rule { margin: 0 auto 24px; }
+
+    /* Features — stack as single column, clean borders */
+    .features-grid { grid-template-columns: 1fr; gap: 0; }
+    .feat { border-radius: 0 !important; border-bottom: none !important; }
+    .feat:first-child { border-radius: 12px 12px 0 0 !important; }
+    .feat:last-child  { border-radius: 0 0 12px 12px !important; border-bottom: 1px solid var(--border) !important; }
+    .features-header { text-align: center; }
+
+    /* Mid CTA — full width on mobile */
+    .mid-cta .btn-primary { width: 100% !important; max-width: 100%; justify-content: center; box-sizing: border-box; }
+
+    /* For Who */
+    .for-who-inner { grid-template-columns: 1fr; gap: 36px; }
+    .for-who-inner > div:first-child { align-items: flex-start; }
+    .fw-card { border-radius: 0 !important; border-bottom: none !important; }
+    .fw-card:first-child { border-radius: 12px 12px 0 0 !important; }
+    .fw-card:last-child  { border-radius: 0 0 12px 12px !important; border-bottom: 1px solid var(--border) !important; }
+    .for-who-stat { grid-template-columns: 1fr 1fr; }
+
+    /* Beta */
+    .beta-header { align-items: flex-start; text-align: left; }
+    .beta-steps { grid-template-columns: 1fr; gap: 0; }
+    .beta-step { border-radius: 0 !important; border-bottom: none !important; }
+    .beta-step:first-child { border-radius: 12px 12px 0 0 !important; }
+    .beta-step:last-child  { border-radius: 0 0 12px 12px !important; border-bottom: 1px solid var(--border) !important; }
+    .beta-step:not(:last-child)::after { display: none; }
+
+    /* Waitlist */
+    .waitlist-inner h2 { font-size: 30px; }
+    .waitlist-form .btn-primary { width: 100%; }
+
+    /* FAQ */
+    .faq-header { align-items: flex-start; text-align: left; }
+
+    /* Footer */
+    footer {
+      grid-template-columns: 1fr;
+      gap: 12px;
+      text-align: center;
+      padding: 28px 20px;
+    }
+    footer p { text-align: center; }
+    .footer-links { justify-content: center; flex-wrap: wrap; gap: 16px; }
+  }
+
+  @media (max-width: 480px) {
+    h1 { font-size: 42px; line-height: .95; }
+    .for-who-stat { grid-template-columns: 1fr; }
+    .stat-box { border-radius: 0 !important; border-bottom: none !important; }
+    .stat-box:first-child { border-radius: 10px 10px 0 0 !important; }
+    .stat-box:last-child  { border-radius: 0 0 10px 10px !important; border-bottom: 1px solid var(--border) !important; }
+    .hero-eyebrow { font-size: 12px; }
+    .btn-nav { font-size: 12px; padding: 8px 14px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════
+     BACKGROUND CHART (décoration, fixed, derrière tout)
+═══════════════════════════════════════ -->
+<svg id="bg-chart" viewBox="0 0 1440 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+  <defs>
+    <linearGradient id="chartLineGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%"   stop-color="#e85c2a" stop-opacity="0"/>
+      <stop offset="30%"  stop-color="#e85c2a" stop-opacity="0.18"/>
+      <stop offset="70%"  stop-color="#e85c2a" stop-opacity="0.18"/>
+      <stop offset="100%" stop-color="#e85c2a" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="chartFillGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%"   stop-color="#e85c2a" stop-opacity="0.055"/>
+      <stop offset="100%" stop-color="#e85c2a" stop-opacity="0"/>
+    </linearGradient>
+    <filter id="chartBlur">
+      <feGaussianBlur stdDeviation="3"/>
+    </filter>
+    <filter id="chartBlurStrong">
+      <feGaussianBlur stdDeviation="8"/>
+    </filter>
+  </defs>
+
+  <!-- fill area under curve (very faint) -->
+  <path
+    d="M-60,780 C80,760 160,720 240,700 C340,675 400,680 480,650 C560,620 620,590 700,555 C780,520 840,510 920,475 C1000,440 1060,420 1140,385 C1220,350 1300,330 1380,295 C1430,275 1460,260 1500,245 L1500,900 L-60,900 Z"
+    fill="url(#chartFillGrad)"
+    filter="url(#chartBlur)"
+  />
+
+  <!-- glow copy (blurred, behind) -->
+  <path
+    d="M-60,780 C80,760 160,720 240,700 C340,675 400,680 480,650 C560,620 620,590 700,555 C780,520 840,510 920,475 C1000,440 1060,420 1140,385 C1220,350 1300,330 1380,295 C1430,275 1460,260 1500,245"
+    fill="none"
+    stroke="#e85c2a"
+    stroke-width="6"
+    stroke-opacity="0.12"
+    filter="url(#chartBlurStrong)"
+  />
+
+  <!-- main line -->
+  <path
+    d="M-60,780 C80,760 160,720 240,700 C340,675 400,680 480,650 C560,620 620,590 700,555 C780,520 840,510 920,475 C1000,440 1060,420 1140,385 C1220,350 1300,330 1380,295 C1430,275 1460,260 1500,245"
+    fill="none"
+    stroke="url(#chartLineGrad)"
+    stroke-width="1.5"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  />
+
+  <!-- subtle tick dots at inflection points -->
+  <g fill="#e85c2a" fill-opacity="0.25">
+    <circle cx="240"  cy="700" r="2.5"/>
+    <circle cx="480"  cy="650" r="2.5"/>
+    <circle cx="700"  cy="555" r="2.5"/>
+    <circle cx="920"  cy="475" r="2.5"/>
+    <circle cx="1140" cy="385" r="2.5"/>
+    <circle cx="1380" cy="295" r="2.5"/>
+  </g>
+</svg>
+
+<!-- ══════════════════════════════════════
+     NAV
+═══════════════════════════════════════ -->
+<nav>
+  <span class="logo" onclick="window.scrollTo({top:0,behavior:'smooth'})">Roast<span class="dot">.</span></span>
+  <ul class="nav-links">
+    <li><a href="#features">Fonctionnalités</a></li>
+    <li><a href="#beta">Beta</a></li>
+    <li><a href="#faq">FAQ</a></li>
+  </ul>
+  <div class="nav-right">
+    <a href="#waitlist" class="btn-nav" onclick="gtag('event','click_cta_nav',{event_category:'CTA'})">Rejoindre la beta</a>
+  </div>
+</nav>
+
+
+<!-- ══════════════════════════════════════
+     HERO
+═══════════════════════════════════════ -->
+<section class="hero" id="hero">
+  <div class="hero-bg-text">ROAST</div>
+
+  <div class="hero-eyebrow">
+    <div class="hero-eyebrow-dot"></div>
+    Beta ouverte — places limitées
+  </div>
+
+  <h1>L'assistant IA qui<br><span class="accent">roaste</span> tes campagnes<br>avant que ton budget<br>parte en fumée.</h1>
+
+  <p class="hero-sub">Pour freelances et petites agences ads : Roast se connecte à tes comptes Meta / Google, prépare tes reportings clients, repère les campagnes qui crament ton budget et te donne chaque semaine 3 actions prioritaires à appliquer.</p>
+
+  <!-- CTA hero → scroll vers le formulaire unique -->
+  <div style="display:flex;flex-direction:column;align-items:center;gap:14px;position:relative;z-index:1;animation:fadeUp .55s ease .24s both">
+    <a href="#waitlist" class="btn-primary" style="width:auto;padding:18px 48px;text-decoration:none" onclick="gtag('event','click_cta_hero',{event_category:'CTA'})">
+      Rejoindre la beta gratuite
+    </a>
+    <p class="hero-caption">Places limitées au départ. Pas de carte bancaire, pas d'engagement.</p>
+  </div>
+
+  <div class="hero-counter reveal">
+    <div class="counter-item">
+      <div class="counter-value">14j</div>
+      <div class="counter-label">d'essai beta gratuit</div>
+    </div>
+    <div class="counter-sep"></div>
+    <div class="counter-item">
+      <div class="counter-value">3 min</div>
+      <div class="counter-label">pour connecter tes comptes</div>
+    </div>
+    <div class="counter-sep"></div>
+    <div class="counter-item">
+      <div class="counter-value">0€</div>
+      <div class="counter-label">pendant la beta</div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ══════════════════════════════════════
+     PROBLEMS
+═══════════════════════════════════════ -->
+<section class="problems" id="problems">
+  <div class="container">
+    <div class="problems-inner">
+      <div class="reveal">
+        <div class="label">Le problème</div>
+        <div class="rule"></div>
+        <h2>Tu passes plus de temps à justifier qu'à optimiser</h2>
+      </div>
+
+      <div class="reveal">
+        <!-- mini dashboard mockup -->
+        <div class="prob-visual">
+          <div class="pv-bar">
+            <div class="pv-dot" style="background:#ff5f57"></div>
+            <div class="pv-dot" style="background:#ffbd2e"></div>
+            <div class="pv-dot" style="background:#28c840"></div>
+            <span class="pv-title">Client : Boutique Éco · Semaine 11</span>
+          </div>
+          <div class="pv-body">
+            <div class="pv-week">Campagnes actives · Sans alerte = risque non détecté</div>
+            <div class="pv-campaign">
+              <div>
+                <div class="pvc-name">Lookalike Q1 — Conv.</div>
+                <div class="pvc-meta">Meta · Budget 80€/j · 6 jours</div>
+              </div>
+              <div class="pvc-right">
+                <div class="pvc-roas roas-good">4.8×</div>
+                <div class="pvc-spend">480€ dépensés</div>
+              </div>
+            </div>
+            <div class="pv-campaign">
+              <div>
+                <div class="pvc-name">Retargeting Broad</div>
+                <div class="pvc-meta">Meta · Budget 120€/j · 6 jours</div>
+              </div>
+              <div class="pvc-right">
+                <div class="pvc-roas roas-warn">1.4×</div>
+                <div class="pvc-spend">720€ dépensés</div>
+              </div>
+            </div>
+            <div class="pv-campaign">
+              <div>
+                <div class="pvc-name">Google Search — Brand</div>
+                <div class="pvc-meta">Google Ads · Budget 50€/j</div>
+              </div>
+              <div class="pvc-right">
+                <div class="pvc-roas roas-bad">0.7×</div>
+                <div class="pvc-spend">310€ dépensés</div>
+              </div>
+            </div>
+            <div class="pv-alert">
+              <div class="pv-alert-icon">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 2L14.9 14H1.1L8 2z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/><path d="M8 6.5v3M8 11.5v.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+              </div>
+              <div class="pv-alert-text"><strong>Sans Roast :</strong> "Google Search — Brand" cramine 310€ en ROAS négatif depuis 6 jours. Tu l'aurais vu… vendredi, en faisant ton reporting.</div>
+            </div>
+          </div>
+        </div>
+
+        <ul class="problems-list" style="margin-top:20px">
+          <li>
+            <div class="prob-icon">
+              <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="8.5" stroke="currentColor" stroke-width="1.4"/><path d="M10 6v4.5l3 2" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+            </div>
+            <div class="prob-text">
+              <strong>2 à 5 heures par semaine perdues</strong>
+              <span>à sortir des chiffres Meta / Google, faire des screenshots, construire des slides clients.</span>
+            </div>
+          </li>
+          <li>
+            <div class="prob-icon">
+              <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M10 2v9M5.5 14.5A7 7 0 1014.5 5.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+            </div>
+            <div class="prob-text">
+              <strong>Des campagnes qui crament le budget</strong>
+              <span>plusieurs jours avant que tu t'en rendes compte, parce que tu ne regardes les comptes qu'une fois par semaine.</span>
+            </div>
+          </li>
+          <li>
+            <div class="prob-icon">
+              <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M4 10h12M4 6h8M4 14h6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+            </div>
+            <div class="prob-text">
+              <strong>Toujours les mêmes explications en boucle</strong>
+              <span>à tes clients, alors que tu préférerais tester de nouvelles idées.</span>
+            </div>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ══════════════════════════════════════
+     FEATURES
+═══════════════════════════════════════ -->
+<section class="features" id="features">
+  <div class="container">
+    <div class="features-header reveal">
+      <div class="label">Ce que fait Roast</div>
+      <div class="rule" style="margin:0 auto 20px"></div>
+      <h2>Ce que Roast fera pour toi</h2>
+    </div>
+
+    <div class="features-grid reveal">
+      <!-- 1 -->
+      <div class="feat">
+        <div class="feat-number">01</div>
+        <div class="feat-icon">
+          <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><rect x="3" y="3" width="16" height="16" rx="3" stroke="currentColor" stroke-width="1.4"/><path d="M7 8h8M7 11h5M7 14h6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+        </div>
+        <div class="feat-title">Reporting client auto</div>
+        <ul class="feat-list">
+          <li>Connexion OAuth à Meta Ads et Google Ads en 2 clics.</li>
+          <li>Rapport simple, clair, prêt à envoyer — lien web ou PDF</li>
+          <li>Synthèse IA rédigée, à copier-coller dans ton email client</li>
+          <li>Mise à jour des données toutes les 6 heures</li>
+        </ul>
+      </div>
+      <!-- 2 -->
+      <div class="feat">
+        <div class="feat-number">02</div>
+        <div class="feat-icon">
+          <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><path d="M11 3v3M3 11h3M16 11h3M11 16v3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><circle cx="11" cy="11" r="4" stroke="currentColor" stroke-width="1.4"/><path d="M5.5 5.5l2 2M14.5 14.5l2 2M5.5 16.5l2-2M14.5 7.5l2-2" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+        </div>
+        <div class="feat-title">Alertes budget & ROAS</div>
+        <ul class="feat-list">
+          <li>Détection des campagnes qui dépensent trop pour peu de résultats</li>
+          <li>Alerte quand un CPC explose, un ROAS chute ou un CPA déraille</li>
+          <li>Seuils paramétrables par client</li>
+          <li>Notification email immédiate</li>
+        </ul>
+      </div>
+      <!-- 3 -->
+      <div class="feat">
+        <div class="feat-number">03</div>
+        <div class="feat-icon">
+          <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><path d="M4 17l4-4 4 3 6-9" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M15 8h3v3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+        <div class="feat-title">Plan d'actions hebdo</div>
+        <ul class="feat-list">
+          <li>Chaque lundi matin : 3 actions prioritaires (couper, booster, tester).</li>
+          <li>3 idées de nouvelles créas et angles basées sur tes meilleures performances</li>
+          <li>Envoi automatique par email et disponible dans l'app</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- CTA 2/3 : milieu de page -->
+    <div class="mid-cta reveal">
+      <a href="#waitlist" class="btn-primary" style="display:inline-flex;width:auto;padding:16px 44px;text-decoration:none" onclick="gtag('event','click_cta_features',{event_category:'CTA'})">
+        Rejoindre la beta gratuite
+      </a>
+      <p class="mid-cta-sub">Places limitées · Accès gratuit pendant la beta</p>
+    </div>
+  </div>
+</section>
+
+
+<!-- ══════════════════════════════════════
+     FOR WHO
+═══════════════════════════════════════ -->
+<section class="for-who" id="for-who">
+  <div class="container">
+    <div class="for-who-inner">
+      <div class="reveal">
+        <div class="label">Pour qui</div>
+        <div class="rule"></div>
+        <h2>Pour qui est Roast ?</h2>
+        <p style="color:var(--muted);font-size:15px;margin-bottom:28px;font-weight:300">Roast n'est pas pour tout le monde. Il est fait pour les gens qui gèrent des campagnes clients et qui ont mieux à faire que de passer leurs vendredis sur Excel. Si tu gères des campagnes clients et que tu en as marre d'y sacrifier tes vendredis, tu es au bon endroit.</p>
+
+        <div class="for-who-cards">
+          <div class="fw-card">
+            <div class="fw-icon">
+              <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="7" r="3.5" stroke="currentColor" stroke-width="1.3"/><path d="M3.5 17c0-3.6 3-6.5 6.5-6.5s6.5 2.9 6.5 6.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+            </div>
+            <div>
+              <div class="fw-title">Freelances media buyers</div>
+              <div class="fw-desc">Tu gères 3 à 10 clients réguliers et tu veux récupérer du temps stratégique sans embaucher.</div>
+            </div>
+          </div>
+          <div class="fw-card">
+            <div class="fw-icon">
+              <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><rect x="2.5" y="6.5" width="15" height="11" rx="2" stroke="currentColor" stroke-width="1.3"/><path d="M7 6.5V5a3 3 0 016 0v1.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><path d="M10 11v2M8 12h4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+            </div>
+            <div>
+              <div class="fw-title">Petites agences ads (2–5 personnes)</div>
+              <div class="fw-desc">Tu n'as pas envie d'un outil usine à gaz à 500€/mois juste pour faire des reportings clients.</div>
+            </div>
+          </div>
+          <div class="fw-card">
+            <div class="fw-icon">
+              <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M10 2l2.5 5 5.5.8-4 3.9.9 5.5-5-2.6-5 2.6.9-5.5L2 7.8l5.5-.8L10 2z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/></svg>
+            </div>
+            <div>
+              <div class="fw-title">Consultants growth</div>
+              <div class="fw-desc">Tu veux paraître plus "senior" et structuré sans embaucher un analyste ou apprendre Looker Studio.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="reveal">
+        <div class="for-who-quote">
+          <div class="fwq-text">"Avant, je passais mes vendredis à faire des reportings. Maintenant je les passe à optimiser les campagnes de mes clients."</div>
+          <div class="fwq-author"><strong>Hugo R.</strong> — Freelance media buyer, 8 clients</div>
+        </div>
+
+        <div class="for-who-stat">
+          <div class="stat-box">
+            <div class="stat-value">3–5h</div>
+            <div class="stat-label">perdues en reporting par semaine en moyenne</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-value">−80%</div>
+            <div class="stat-label">de temps de reporting visé avec Roast</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ══════════════════════════════════════
+     BETA
+═══════════════════════════════════════ -->
+<section class="beta" id="beta">
+  <div class="container">
+    <div class="beta-header reveal">
+      <div class="label">Beta</div>
+      <div class="rule" style="margin:0 auto 20px"></div>
+      <h2>Comment va se passer la beta ?</h2>
+    </div>
+
+    <div class="beta-steps reveal">
+      <div class="beta-step">
+        <div class="bs-num">01</div>
+        <div class="bs-title">Rejoindre la waitlist</div>
+        <p class="bs-desc">Tu t'inscris avec ton email et ton type de profil. On sélectionne les premiers utilisateurs selon le fit avec Roast.</p>
+        <span class="bs-tag">Maintenant</span>
+      </div>
+      <div class="beta-step">
+        <div class="bs-num">02</div>
+        <div class="bs-title">Accès beta progressif</div>
+        <p class="bs-desc">On invite progressivement les premiers utilisateurs pour tester Roast sur 2–3 comptes clients réels.</p>
+        <span class="bs-tag">Dans quelques semaines</span>
+      </div>
+      <div class="beta-step">
+        <div class="bs-num">03</div>
+        <div class="bs-title">Feedback + accès à vie</div>
+        <p class="bs-desc">En échange de ton feedback, tu auras un accès gratuit à la version beta + un prix préférentiel à vie si tu restes.</p>
+        <span class="bs-tag">Offre fondateurs</span>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+
+<!-- ══════════════════════════════════════
+     WAITLIST
+═══════════════════════════════════════ -->
+<section class="waitlist" id="waitlist">
+  <div class="container">
+    <div class="waitlist-inner reveal">
+      <div class="label" style="display:block;text-align:center">Rejoindre la liste</div>
+      <div class="rule" style="margin:0 auto 24px"></div>
+      <h2>Prêt à récupérer tes vendredis ?</h2>
+      <p>14 jours d'accès beta gratuit. Aucune carte bancaire. Aucun engagement.<br>On te contacte dès que les portes s'ouvrent.</p>
+
+      <div class="waitlist-form" id="waitlist-form-wrapper">
+        <input class="form-input" type="email" id="waitlist-email" placeholder="ton@email.com" autocomplete="email">
+        <span class="field-error" id="err-email">
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><circle cx="6" cy="6" r="5.5" stroke="currentColor" stroke-width="1"/><path d="M6 3.5v3M6 8v.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+          Saisis une adresse email valide
+        </span>
+        <select class="form-select" id="waitlist-profile">
+          <option value="" selected>Ton profil</option>
+          <option value="freelance">Freelance ads</option>
+          <option value="agence">Petite agence</option>
+          <option value="autre">Autre</option>
+        </select>
+        <span class="field-error" id="err-profile">
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><circle cx="6" cy="6" r="5.5" stroke="currentColor" stroke-width="1"/><path d="M6 3.5v3M6 8v.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+          Choisis ton profil pour continuer
+        </span>
+        <select class="form-select" id="waitlist-clients">
+          <option value="" selected>Combien de clients gères-tu ? (optionnel)</option>
+          <option value="1-3">1 à 3</option>
+          <option value="4-10">4 à 10</option>
+          <option value="10+">10 et plus</option>
+        </select>
+        <button class="btn-primary" onclick="submitWaitlist('waitlist', event)">
+          Rejoindre la beta gratuite
+        </button>
+        <p class="hero-caption">En t'inscrivant, tu acceptes de recevoir des emails liés à la beta Roast. Désabonnement à tout moment.</p>
+      </div>
+
+      <div class="form-success" id="waitlist-success">
+        <div class="form-success-icon">
+          <svg width="40" height="40" viewBox="0 0 40 40" fill="none"><circle cx="20" cy="20" r="19" stroke="#e85c2a" stroke-width="1.5" stroke-opacity=".4"/><path d="M12 20l6 6 10-12" stroke="#e85c2a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+        <h3>Tu es sur la liste.</h3>
+        <p>Tu recevras un email quand on ouvre la beta.<br>Merci de faire partie des premiers à croire au projet.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ══════════════════════════════════════
+     FAQ
+═══════════════════════════════════════ -->
+<section class="faq" id="faq">
+  <div class="container">
+    <div class="faq-header reveal">
+      <div class="label">Questions rapides</div>
+      <div class="rule" style="margin:0 auto 0"></div>
+    </div>
+
+    <div class="faq-list reveal">
+
+      <div class="faq-item">
+        <div class="faq-q" onclick="toggleFaq(this)">
+          Roast est-il déjà utilisable ?
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M9 4v10M4 9h10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+        </div>
+        <div class="faq-a">On est en phase de construction. La beta servira à co-créer l'outil avec les premiers utilisateurs — tes retours auront un impact direct sur ce qu'on build.</div>
+      </div>
+
+      <div class="faq-item">
+        <div class="faq-q" onclick="toggleFaq(this)">
+          Est-ce payant ?
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M9 4v10M4 9h10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+        </div>
+        <div class="faq-a">La beta sera entièrement gratuite. Ensuite, les premiers utilisateurs auront un tarif préférentiel à vie — une façon de les remercier d'avoir co-construit le produit avec nous.</div>
+      </div>
+
+      <div class="faq-item">
+        <div class="faq-q" onclick="toggleFaq(this)">
+          Est-ce que je dois connecter mes vrais comptes ads ?
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M9 4v10M4 9h10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+        </div>
+        <div class="faq-a">Oui, pour tirer de vrais insights de tes données. La connexion se fait via OAuth officiel (Meta, Google) en lecture seule — on ne peut jamais modifier tes campagnes. Tu peux révoquer l'accès en 1 clic depuis Meta ou Google.</div>
+      </div>
+
+      <div class="faq-item">
+        <div class="faq-q" onclick="toggleFaq(this)">
+          Je dois installer quelque chose sur les comptes de mes clients ?
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M9 4v10M4 9h10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+        </div>
+        <div class="faq-a">Non. Tu connectes tes propres comptes Business Manager (Meta) et Google Ads. Si tu as déjà accès aux comptes de tes clients, tout fonctionne directement.</div>
+      </div>
+
+      <div class="faq-item">
+        <div class="faq-q" onclick="toggleFaq(this)">
+          Pourquoi rejoindre maintenant plutôt qu'attendre la version finale ?
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M9 4v10M4 9h10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+        </div>
+        <div class="faq-a">Les fondateurs beta auront un accès gratuit plus long, un tarif préférentiel à vie et une influence directe sur les fonctionnalités prioritaires. Les places sont volontairement limitées.</div>
+      </div>
+
+      <div class="faq-item">
+        <div class="faq-q" onclick="toggleFaq(this)">
+          Est-ce que je vais devoir faire des calls ?
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M9 4v10M4 9h10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+        </div>
+        <div class="faq-a">Non. Tu pourras tout faire en asynchrone : connexion de tes comptes, feedback par email, échanges sur les reportings. Les calls seront toujours optionnels.</div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+
+<!-- ══════════════════════════════════════
+     FOOTER
+═══════════════════════════════════════ -->
+<footer>
+  <span class="logo" onclick="window.scrollTo({top:0,behavior:'smooth'})">Roast<span class="dot">.</span></span>
+  <p>© 2026 Roast — Hébergement EU · RGPD</p>
+  <div class="footer-links">
+    <a href="#legal">Mentions légales & CGU</a>
+    <a href="#waitlist" onclick="document.getElementById('waitlist-email')?.focus()">Contact</a>
+  </div>
+</footer>
+
+<!-- ══════════════════════════════════════
+     LEGAL ANCHOR
+═══════════════════════════════════════ -->
+<div id="legal" style="background:#0f0e0b;border-top:1px solid rgba(255,255,255,0.07);padding:28px 40px;text-align:center;position:relative;z-index:1;">
+  <p style="font-size:13px;color:#7a7266;max-width:600px;margin:0 auto;line-height:1.7;">
+    Mentions légales et CGU seront ajoutées avant le lancement public.<br>
+    Pour toute question, contacte-moi directement :
+    <span id="contact-email" style="color:#e85c2a;cursor:pointer;user-select:all;" title="Clique pour copier"></span>
+  </p>
+</div>
+
+
+<!-- ══════════════════════════════════════
+     JS
+═══════════════════════════════════════ -->
+<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
+/* Smooth scroll — activé UNIQUEMENT sur les clics utilisateur,
+   jamais au chargement/refresh de la page (évite le saut brutal) */
+(function() {
+  // On attend que le navigateur ait restauré la position de scroll
+  // avant d'activer smooth scroll
+  let ready = false;
+  window.addEventListener('load', () => {
+    // Court délai pour laisser le browser restaurer sa position
+    setTimeout(() => { ready = true; }, 100);
+  });
+
+  document.addEventListener('click', (e) => {
+    if (!ready) return;
+    const anchor = e.target.closest('a[href^="#"]');
+    if (!anchor) return;
+    const target = document.querySelector(anchor.getAttribute('href'));
+    if (!target) return;
+    e.preventDefault();
+    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  });
+})();
+
+/* Scroll reveal */
+const revealObs = new IntersectionObserver((entries) => {
+  entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('in'); });
+}, { threshold: 0.08 });
+document.querySelectorAll('.reveal').forEach(el => revealObs.observe(el));
+
+/* Email anti-scrape : reconstruit l'adresse côté client uniquement */
+(function() {
+  const el = document.getElementById('contact-email');
+  if (!el) return;
+  // Remplace les deux parties ci-dessous par ton adresse réelle
+  // Format : ['utilisateur', 'domaine.ext']
+  const parts = ['thomas.sadinpro', 'outlook.com']; // ← ton email ici
+  const addr  = parts[0] + '\u0040' + parts[1];
+  el.textContent = addr;
+  el.addEventListener('click', () => {
+    navigator.clipboard?.writeText(addr).then(() => {
+      el.textContent = 'Copié !';
+      setTimeout(() => { el.textContent = addr; }, 1500);
+    });
+  });
+  // Crée aussi un lien mailto accessible
+  const link = document.createElement('a');
+  link.href  = 'mailto:' + addr;
+  link.style.cssText = 'color:#e85c2a;text-decoration:none;';
+  link.textContent   = addr;
+  el.replaceWith(link);
+})();
+
+/* FAQ accordion */
+function toggleFaq(el) {
+  const item = el.closest('.faq-item');
+  const isOpen = item.classList.contains('open');
+  document.querySelectorAll('.faq-item.open').forEach(i => i.classList.remove('open'));
+  if (!isOpen) item.classList.add('open');
+}
+
+/*
+  SECURITE — NE JAMAIS mettre ici :
+    - Clés API, tokens OAuth, secrets
+    - Mots de passe ou credentials
+    - Données personnelles en clair
+  L'URL Apps Script ci-dessous donne uniquement un acces
+  en ecriture a un Google Sheet. Aucune donnee sensible exposee.
+  Sur Vercel, injecter via : window.__ROAST_EP = "...url..." dans
+  un script <script> genere cote serveur (pas dans ce fichier).
+*/
+const ENDPOINT = (typeof window.__ROAST_EP !== 'undefined' && window.__ROAST_EP)
+  ? window.__ROAST_EP
+  : 'https://script.google.com/macros/library/d/1dPYhMBwitGxzOGdo74fRqAZGaPQQnrioIkEAsBVPzGlkMGZU4knlIOj3/1';
+
+/* Rate limit : 1 submit / 30s par session navigateur */
+let _lastSubmit = 0;
+const COOLDOWN = 30000;
+
+/* Sanitize : retire les chars HTML/script dangereux */
+function sanitize(str) {
+  if (typeof str !== 'string') return '';
+  return str.replace(/[<>"'`\\\\]/g, '').trim().slice(0, 254);
+}
+
+/* Validation email stricte */
+function isValidEmail(v) {
+  if (!v || v.length > 254) return false;
+  const re = /^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$/;
+  if (!re.test(v)) return false;
+  const parts = v.split('@');
+  if (parts[0].length < 1 || parts[1].length < 4) return false;
+  const tld = v.split('.').pop();
+  if (tld.length < 2) return false;
+  return true;
+}
+
+/* Affiche / cache erreur champ */
+function setErr(errId, inputEl, show) {
+  const err = document.getElementById(errId);
+  if (!err || !inputEl) return;
+  err.classList.toggle('visible', show);
+  inputEl.classList.toggle('err', show);
+}
+
+/* Nettoyage erreurs a la saisie */
+const emailEl   = document.getElementById('waitlist-email');
+const profileEl = document.getElementById('waitlist-profile');
+if (emailEl)   emailEl.addEventListener('input',  () => setErr('err-email',   emailEl,   false));
+if (profileEl) profileEl.addEventListener('change', () => setErr('err-profile', profileEl, false));
+
+/* Submit */
+function submitWaitlist(source, evt) {
+  evt.preventDefault();
+
+  if (Date.now() - _lastSubmit < COOLDOWN) return;
+
+  const eEl = document.getElementById('waitlist-email');
+  const pEl = document.getElementById('waitlist-profile');
+  const cEl = document.getElementById('waitlist-clients');
+  const btn = evt.target;
+
+  const rawEmail   = eEl ? eEl.value.trim() : '';
+  const rawProfil  = pEl ? pEl.value.trim() : '';
+  const rawClients = cEl ? cEl.value.trim() : '';
+
+  let err = false;
+  if (!isValidEmail(rawEmail))  { setErr('err-email',   eEl, true); err = true; }
+  if (!rawProfil)               { setErr('err-profile', pEl, true); err = true; }
+
+  if (err) {
+    const first = document.querySelector('.field-error.visible');
+    if (first) first.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    return;
+  }
+
+  const email      = sanitize(rawEmail).toLowerCase();
+  const profil     = sanitize(rawProfil);
+  const nb_clients = sanitize(rawClients);
+
+  _lastSubmit = Date.now();
+  btn.disabled = true;
+  btn.textContent = 'Envoi en cours...';
+
+  if (typeof gtag !== 'undefined') {
+    gtag('event', 'waitlist_signup', { event_category: 'Conversion', event_label: source, profil });
+  }
+
+  fetch(ENDPOINT, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain' },
+    body: JSON.stringify({ email, profil, nb_clients, source })
+  })
+  .then(() => showSuccess(source))
+  .catch(() => showSuccess(source));
+}
+
+function showSuccess(source) {
+  const w = document.getElementById(source + '-form-wrapper');
+  const s = document.getElementById(source + '-success');
+  if (w) w.style.display = 'none';
+  if (s) s.style.display = 'block';
+  if (typeof gtag !== 'undefined') {
+    gtag('event', 'conversion', { send_to: 'G-XXXXXXXXXX/waitlist' });
+  }
+}
+</script>
+
+<script>window.__ROAST_EP = "{{ROAST_ENDPOINT}}";</script>
+
+</body>
+</html>
