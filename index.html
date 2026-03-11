@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Roast – L'assistant IA qui roaste tes campagnes ads</title>
+<script src="https://cdn.jsdelivr.net/npm/@vercel/speed-insights@1.0.0/dist/index.min.js"></script>
 
 <!-- Google Analytics placeholder -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX"></script>
@@ -1548,7 +1549,7 @@ function toggleFaq(el) {
 */
 const ENDPOINT = (typeof window.__ROAST_EP !== 'undefined' && window.__ROAST_EP)
   ? window.__ROAST_EP
-  : 'https://script.google.com/macros/library/d/1dPYhMBwitGxzOGdo74fRqAZGaPQQnrioIkEAsBVPzGlkMGZU4knlIOj3/1';
+  : 'https://script.google.com/macros/s/AKfycbxL44pNOZmGjnc4eLIvB3a2BGO-DUUFauOktyide25qHOIpVVjFCpPuH_Own7gKc_iVUA/exec';
 
 /* Rate limit : 1 submit / 30s par session navigateur */
 let _lastSubmit = 0;
